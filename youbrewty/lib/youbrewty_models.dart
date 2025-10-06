@@ -17,21 +17,32 @@ class Batch {
   List<BatchReview> reviews;
 
   Batch({
-    required this.batchId,
-    required this.name,
-    required this.capacity,
-    this.ingredientEvents = const [],
-    this.transferEvents = const [],
-    this.roomHistory = const [],
-    this.activityHistory = const [],
-    this.samplingEvents = const [],
-    this.noteEvents = const [],
-    this.parentBatchIds = const [],
-    this.childBatchIds = const [],
-    this.isConsumed = false,
-    this.sharedWithBrewers = const [],
-    this.reviews = const [],
-  });
+  required this.batchId,
+  required this.name,
+  required this.capacity,
+  List<IngredientEvent>? ingredientEvents,
+  List<TransferEvent>? transferEvents,
+  List<RoomEvent>? roomHistory,
+  List<ActivityEvent>? activityHistory,
+  List<SamplingEvent>? samplingEvents,
+  List<NoteEvent>? noteEvents,
+  List<String>? parentBatchIds,
+  List<String>? childBatchIds,
+  bool isConsumed = false,
+  List<String>? sharedWithBrewers,
+  List<BatchReview>? reviews,
+})  : ingredientEvents = ingredientEvents ?? [],
+      transferEvents = transferEvents ?? [],
+      roomHistory = roomHistory ?? [],
+      activityHistory = activityHistory ?? [],
+      samplingEvents = samplingEvents ?? [],
+      noteEvents = noteEvents ?? [],
+      parentBatchIds = parentBatchIds ?? [],
+      childBatchIds = childBatchIds ?? [],
+      sharedWithBrewers = sharedWithBrewers ?? [],
+      reviews = reviews ?? [],
+      isConsumed = isConsumed;
+
 }
 
 class IngredientEvent {
@@ -64,7 +75,7 @@ class TransferEvent {
   });
 }
 
-enum TransferDirection { in, out }
+enum TransferDirection { TransferIn, TransferOut }
 
 class RoomEvent {
   final String roomId;
@@ -138,16 +149,20 @@ class Brewer {
   Map<String, NotificationPreference> notificationPreferences;
 
   Brewer({
-    required this.brewerId,
-    required this.name,
-    this.description,
-    this.photo,
-    this.ownedBatchIds = const [],
-    this.memberClubIds = const [],
-    this.favoriteBrewerIds = const [],
-    this.favoriteClubIds = const [],
-    this.notificationPreferences = const {},
-  });
+  required this.brewerId,
+  required this.name,
+  this.description,
+  this.photo,
+  List<String>? ownedBatchIds,
+  List<String>? memberClubIds,
+  List<String>? favoriteBrewerIds,
+  List<String>? favoriteClubIds,
+  Map<String, NotificationPreference>? notificationPreferences,
+})  : ownedBatchIds = ownedBatchIds ?? [],
+      memberClubIds = memberClubIds ?? [],
+      favoriteBrewerIds = favoriteBrewerIds ?? [],
+      favoriteClubIds = favoriteClubIds ?? [],
+      notificationPreferences = notificationPreferences ?? {};
 }
 
 class Club {
@@ -162,16 +177,19 @@ class Club {
   Map<String, NotificationPreference> notificationPreferences;
 
   Club({
-    required this.clubId,
-    required this.name,
-    this.description,
-    this.photo,
-    required this.ownerBrewerId,
-    this.memberBrewerIds = const [],
-    this.favoriteByBrewers = const [],
-    this.reviewAttributes = const [],
-    this.notificationPreferences = const {},
-  });
+  required this.clubId,
+  required this.name,
+  this.description,
+  this.photo,
+  required this.ownerBrewerId,
+  List<String>? memberBrewerIds,
+  List<String>? favoriteByBrewers,
+  List<ClubReviewAttribute>? reviewAttributes,
+  Map<String, NotificationPreference>? notificationPreferences,
+})  : memberBrewerIds = memberBrewerIds ?? [],
+      favoriteByBrewers = favoriteByBrewers ?? [],
+      reviewAttributes = reviewAttributes ?? [],
+      notificationPreferences = notificationPreferences ?? {};
 }
 
 enum NotificationPreference { all, silent, none }
