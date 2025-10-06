@@ -4,7 +4,34 @@ import 'screens/batch_list_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/settings_screen.dart';
 
-void main() => runApp(const YouBrewtyApp());
+import 'screens/batch_lineage_screen.dart';
+import 'utils/test_data.dart';
+
+//void main() => runApp(const YouBrewtyApp());
+
+void main() {
+  final batches = generateBatchesForUi();
+  //final batchMap = { for (var b in batches) b.batchId : b };
+  //final rootBatch = batches.first;
+
+  final batchMap = { for (var b in batches) b.batchId : b };
+
+    // Find terminal batches with a merge in their ancestry
+    final terminalBatches = findTerminalBatches(batches);
+    final mergedTerminalBatches = terminalBatches.where((b) => hasMergeInAncestry(b, batchMap)).toList();
+
+    if (mergedTerminalBatches.isEmpty) {
+      throw Exception('No terminal batches found that are also merge nodes or have merges in their ancestry!');
+    }
+    final finalBatch = mergedTerminalBatches[random.nextInt(mergedTerminalBatches.length)];
+
+
+  runApp(MaterialApp(
+    home: BatchLineageScreen(rootBatch: finalBatch, batchMap: batchMap),
+  ));
+}
+
+
 
 class YouBrewtyApp extends StatelessWidget {
   const YouBrewtyApp({super.key});
