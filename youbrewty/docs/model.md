@@ -50,7 +50,6 @@ classDiagram
     class IngredientAction
     class MergeEventType
 
-    % Relationships
     Batch "1" o-- "*" IngredientEvent : contains
     Batch "1" o-- "*" MergeEvent : contains
     Batch "1" o-- "*" RoomEvent : stored in
