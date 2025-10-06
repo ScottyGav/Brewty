@@ -15,6 +15,7 @@ class Batch {
   bool isConsumed;
   List<String> sharedWithBrewers;
   List<BatchReview> reviews;
+  List<MergeEvent> mergeEvents;
 
   Batch({
   required this.batchId,
@@ -31,6 +32,7 @@ class Batch {
   bool isConsumed = false,
   List<String>? sharedWithBrewers,
   List<BatchReview>? reviews,
+  List<MergeEvent>? mergeEvents,
 })  : ingredientEvents = ingredientEvents ?? [],
       transferEvents = transferEvents ?? [],
       roomHistory = roomHistory ?? [],
@@ -41,7 +43,8 @@ class Batch {
       childBatchIds = childBatchIds ?? [],
       sharedWithBrewers = sharedWithBrewers ?? [],
       reviews = reviews ?? [],
-      isConsumed = isConsumed;
+      isConsumed = isConsumed,
+      mergeEvents = mergeEvents ?? [];
 
 }
 
@@ -148,6 +151,8 @@ class Brewer {
   List<String> favoriteBrewerIds;
   List<String> favoriteClubIds;
   Map<String, NotificationPreference> notificationPreferences;
+  List<Prompt> prompts;
+
 
   Brewer({
   required this.brewerId,
@@ -159,11 +164,13 @@ class Brewer {
   List<String>? favoriteBrewerIds,
   List<String>? favoriteClubIds,
   Map<String, NotificationPreference>? notificationPreferences,
+  List<Prompt>? prompts,
 })  : ownedBatchIds = ownedBatchIds ?? [],
       memberClubIds = memberClubIds ?? [],
       favoriteBrewerIds = favoriteBrewerIds ?? [],
       favoriteClubIds = favoriteClubIds ?? [],
-      notificationPreferences = notificationPreferences ?? {};
+      notificationPreferences = notificationPreferences ?? {}, 
+      prompts = prompts ?? [];
 }
 
 class Club {
@@ -176,6 +183,7 @@ class Club {
   List<String> favoriteByBrewers;
   List<ClubReviewAttribute> reviewAttributes;
   Map<String, NotificationPreference> notificationPreferences;
+  List<Prompt>? prompts;
 
   Club({
   required this.clubId,
@@ -187,10 +195,12 @@ class Club {
   List<String>? favoriteByBrewers,
   List<ClubReviewAttribute>? reviewAttributes,
   Map<String, NotificationPreference>? notificationPreferences,
+  List<Prompt>? prompts,
 })  : memberBrewerIds = memberBrewerIds ?? [],
       favoriteByBrewers = favoriteByBrewers ?? [],
       reviewAttributes = reviewAttributes ?? [],
-      notificationPreferences = notificationPreferences ?? {};
+      notificationPreferences = notificationPreferences ?? {}, 
+      prompts = prompts ?? [];
 }
 
 enum NotificationPreference { all, silent, none }
@@ -245,6 +255,21 @@ class ClubReviewAttribute {
   });
 }
 
+enum MergeEventType { creation, ingredient }
+
+class MergeEvent {
+  final String hostBatchId;              // The batch receiving the merge
+  final List<String> sourceBatchIds;     // The batch IDs being merged in
+  final DateTime timestamp;
+  final MergeEventType type;
+
+  MergeEvent({
+    required this.hostBatchId,
+    required this.sourceBatchIds,
+    required this.timestamp,
+    required this.type,
+  });
+}
 
 enum PromptType { tastingNote, labelDescription, review, custom }
 enum ThemeType { poetic, concise, playful, classic, custom }
@@ -270,28 +295,3 @@ class Prompt {
   });
 }
 
-// Add a List<Prompt> to Club
-class Club {
-  // ...existing fields...
-  List<Prompt> prompts;
-
-  Club({
-    // ...existing parameters...
-    List<Prompt>? prompts,
-    // ...other named params...
-  }) : prompts = prompts ?? [];
-  // ...existing constructor body...
-}
-
-// Add a List<Prompt> to Brewer
-class Brewer {
-  // ...existing fields...
-  List<Prompt> prompts;
-
-  Brewer({
-    // ...existing parameters...
-    List<Prompt>? prompts,
-    // ...other named params...
-  }) : prompts = prompts ?? [];
-  // ...existing constructor body...
-}
