@@ -1,22 +1,33 @@
-// Core Batch and Related Entities
-
+/// Represents a brewing batch, which may be composed of ingredients,
+/// one or more parent batches (in case of merges), and may itself become
+/// an ingredient or parent for other batches.
 class Batch {
+   /// Unique identifier for this batch.
   final String batchId;
+    /// Human-readable name for the batch.
   String name;
+    /// Maximum capacity of the batch in milliliters.
   double capacity;
+    /// List of events where ingredients were added, removed, or modified.
   List<IngredientEvent> ingredientEvents;
   List<TransferEvent> transferEvents;
+    /// History of which rooms this batch was kept in, with timestamps.
   List<RoomEvent> roomHistory;
   List<ActivityEvent> activityHistory;
   List<SamplingEvent> samplingEvents;
   List<NoteEvent> noteEvents;
+    /// List of batch IDs that are direct parents of this batch (merge ancestry).
   List<String> parentBatchIds;
+  /// List of batch IDs that are direct children of this batch (batches that inherit from this one).
   List<String> childBatchIds;
   bool isConsumed;
+    /// List of brewer IDs with whom this batch is shared.
   List<String> sharedWithBrewers;
   List<BatchReview> reviews;
+  /// List of merge events that occurred for this batch (either at creation or during its lifecycle).
   List<MergeEvent> mergeEvents;
 
+  /// Creates a new [Batch] instance.
   Batch({
   required this.batchId,
   required this.name,
@@ -47,13 +58,18 @@ class Batch {
       mergeEvents = mergeEvents ?? [];
 
 }
-
+/// Represents an event where an ingredient was added, removed, or otherwise acted upon in a batch.
 class IngredientEvent {
+   /// Type/name of the ingredient (e.g., "honey", "batch:BA1234").
   final String ingredientType;
+   /// Quantity (in milliliters) of the ingredient used in this event.
   final double quantity;
+    /// The action performed (add, remove, etc.).
   final IngredientAction action;
+  /// Timestamp when this ingredient event occurred.
   final DateTime timestamp;
 
+  /// Creates a new [IngredientEvent] instance.
   IngredientEvent({
     required this.ingredientType,
     required this.quantity,
@@ -62,7 +78,13 @@ class IngredientEvent {
   });
 }
 
-enum IngredientAction { add, remove }
+
+/// Enum representing an action performed on an ingredient in a batch.
+enum IngredientAction { 
+  add, /// Ingredient was added to the batch.
+  remove, /// Ingredient was removed from the batch.
+   custom, /// Ingredient was otherwise manipulated (custom).
+  }
 
 
 class TransferEvent {
@@ -81,10 +103,12 @@ class TransferEvent {
 
 enum TransferDirection { TransferIn, TransferOut }
 
+/// Represents an event where a batch is moved to a different room.
 class RoomEvent {
-  final String roomId;
-  final DateTime timestamp;
-
+  final String roomId;/// The room's unique identifier.
+  final DateTime timestamp; /// The timestamp when the batch entered this room.
+ 
+ /// Creates a new [RoomEvent] instance.
   RoomEvent({required this.roomId, required this.timestamp});
 }
 
@@ -255,13 +279,21 @@ class ClubReviewAttribute {
   });
 }
 
-enum MergeEventType { creation, ingredient }
+/// Enum representing the type of merge event that can occur in a batch.
+enum MergeEventType { 
+  /// Merge occurred during batch creation (multiple parents specified at creation).
+  creation, 
+  /// Merge occurred by adding another batch as an ingredient during the batch's lifecycle.
+  ingredient 
+  }
 
+/// Represents an event where multiple batches are merged into a host batch,
+/// either at creation or as an ingredient event during the batch's life.
 class MergeEvent {
   final String hostBatchId;              // The batch receiving the merge
-  final List<String> sourceBatchIds;     // The batch IDs being merged in
-  final DateTime timestamp;
-  final MergeEventType type;
+  final List<String> sourceBatchIds;     // The batch IDs being merged in  (sources).
+  final DateTime timestamp;               /// Timestamp when the merge event occurred.
+  final MergeEventType type;            /// The type of merge event (creation or ingredient).
 
   MergeEvent({
     required this.hostBatchId,
