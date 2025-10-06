@@ -61,6 +61,7 @@ class IngredientEvent {
 
 enum IngredientAction { add, remove }
 
+
 class TransferEvent {
   final TransferDirection direction;
   final double volume;
@@ -242,4 +243,55 @@ class ClubReviewAttribute {
     this.description,
     required this.order,
   });
+}
+
+
+enum PromptType { tastingNote, labelDescription, review, custom }
+enum ThemeType { poetic, concise, playful, classic, custom }
+enum StructureType { ingredientLineage, reviewAttributes, batchInfo, custom }
+
+class Prompt {
+  final String promptId;
+  final PromptType promptType;
+  final ThemeType themeType;
+  final StructureType structureType;
+  final String instruction;
+  final String? creatorBrewerId; // null if system/default prompt
+  final String? clubId; // null if not club-specific
+
+  Prompt({
+    required this.promptId,
+    required this.promptType,
+    required this.themeType,
+    required this.structureType,
+    required this.instruction,
+    this.creatorBrewerId,
+    this.clubId,
+  });
+}
+
+// Add a List<Prompt> to Club
+class Club {
+  // ...existing fields...
+  List<Prompt> prompts;
+
+  Club({
+    // ...existing parameters...
+    List<Prompt>? prompts,
+    // ...other named params...
+  }) : prompts = prompts ?? [];
+  // ...existing constructor body...
+}
+
+// Add a List<Prompt> to Brewer
+class Brewer {
+  // ...existing fields...
+  List<Prompt> prompts;
+
+  Brewer({
+    // ...existing parameters...
+    List<Prompt>? prompts,
+    // ...other named params...
+  }) : prompts = prompts ?? [];
+  // ...existing constructor body...
 }
