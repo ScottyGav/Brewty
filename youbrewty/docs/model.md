@@ -53,8 +53,6 @@ classDiagram
     Batch "1" o-- "*" IngredientEvent : contains
     Batch "1" o-- "*" MergeEvent : contains
     Batch "1" o-- "*" RoomEvent : stored in
-    Batch "1" o-- "*" "parentBatchIds" : parent
-    Batch "1" o-- "*" "childBatchIds" : child
     IngredientEvent "1" --> "1" IngredientAction : uses
     MergeEvent "1" --> "1" MergeEventType : type
     Brewer "1" o-- "*" Batch : owns
