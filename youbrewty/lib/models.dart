@@ -1,3 +1,5 @@
+
+
 /// Represents a brewing batch, which may be composed of ingredients,
 /// one or more parent batches (in case of merges), and may itself become
 /// an ingredient or parent for other batches.
@@ -11,15 +13,16 @@ class Batch {
     /// List of events where ingredients were added, removed, or modified.
   List<IngredientEvent> ingredientEvents;
   List<TransferEvent> transferEvents;
+  List<StrainTransferEvent> strainTransferEvents;
     /// History of which rooms this batch was kept in, with timestamps.
   List<RoomEvent> roomHistory;
   List<ActivityEvent> activityHistory;
   List<SamplingEvent> samplingEvents;
   List<NoteEvent> noteEvents;
     /// List of batch IDs that are direct parents of this batch (merge ancestry).
-  List<String> parentBatchIds;
+  List<Batch> parentBatchs;
   /// List of batch IDs that are direct children of this batch (batches that inherit from this one).
-  List<String> childBatchIds;
+  List<Batch> childBatchs;
   bool isConsumed;
     /// List of brewer IDs with whom this batch is shared.
   List<String> sharedWithBrewers;
@@ -36,12 +39,13 @@ class Batch {
   required this.capacity,
   List<IngredientEvent>? ingredientEvents,
   List<TransferEvent>? transferEvents,
+  List<StrainTransferEvent>? strainTransferEvents, 
   List<RoomEvent>? roomHistory,
   List<ActivityEvent>? activityHistory,
   List<SamplingEvent>? samplingEvents,
   List<NoteEvent>? noteEvents,
-  List<String>? parentBatchIds,
-  List<String>? childBatchIds,
+  List<Batch>? parentBatchs,
+  List<Batch>? childBatchs,
   bool isConsumed = false,
   List<String>? sharedWithBrewers,
   List<BatchReview>? reviews,
@@ -49,12 +53,13 @@ class Batch {
   List<Strain>? strains,
 })  : ingredientEvents = ingredientEvents ?? [],
       transferEvents = transferEvents ?? [],
+      strainTransferEvents = strainTransferEvents ?? [],
       roomHistory = roomHistory ?? [],
       activityHistory = activityHistory ?? [],
       samplingEvents = samplingEvents ?? [],
       noteEvents = noteEvents ?? [],
-      parentBatchIds = parentBatchIds ?? [],
-      childBatchIds = childBatchIds ?? [],
+      parentBatchs = parentBatchs ?? [],
+      childBatchs = childBatchs ?? [],
       sharedWithBrewers = sharedWithBrewers ?? [],
       reviews = reviews ?? [],
       isConsumed = isConsumed,
@@ -191,44 +196,57 @@ class NoteEvent {
 }
 
 class Strain{
-  final String ingrediant; //source ingrediant reference
+  final String strainId;
+  final String strainName;
+  final Ingredient ingrediant; //source ingrediant reference
   final DateTime initialDate;
   final String brewerId;
   final String description;
-  final List<StrainTransferEvent> strainTransferEventHistory;
+  final List<StrainTransferEvent> strainTransferEvents;
+  final List<IngredientEvent> strainIngredientEvents; //feedings
+  
+
 
   Strain({
+    required this.strainId,
+    required this.strainName,
     required this.ingrediant, //source ingrediant reference
     required this.initialDate,
     required this.brewerId,
     required this.description,
-    List<StrainTransferEvent>? strainTransferEventHistory
-  }) : strainTransferEventHistory = strainTransferEventHistory ?? [];
+    List<StrainTransferEvent>? strainTransferEvents,
+    List<IngredientEvent>? strainIngredientEvents,
+
+  }) : strainTransferEvents = strainTransferEvents ?? [],
+      strainIngredientEvents = strainIngredientEvents ?? [];
 }
 
 class StrainTransferEvent{
+  final String eventId;
+  final List<StrainTransferEvent?> previousStrainTransferEvents;
+  final Strain strain;
   final String sourceBatchId;
-  final String hostBatchId;
-  final DateTime date;
-  final String transferId;
+  final String destinationBatchId;//multiple to accomodate splits 
+  final DateTime timestamp;
 
   StrainTransferEvent ({
+    required this.eventId,
+    required this.previousStrainTransferEvents,
+    required this.strain,
     required this.sourceBatchId,
-    required this.hostBatchId,
-    required this.date,
-    required this.transferId,
+    required this.destinationBatchId,
+    required this.timestamp,
   });
 
 }
 
-// Brewer, Club, Notification
-
+/// Represents a brewer in the system.
 class Brewer {
   final String brewerId;
   String name;
   String? description;
   String? photo;
-  List<String> ownedBatchIds;
+  List<Batch> ownedBatchs;
   List<String> memberClubIds;
   List<String> favoriteBrewerIds;
   List<String> favoriteClubIds;
@@ -241,13 +259,13 @@ class Brewer {
   required this.name,
   this.description,
   this.photo,
-  List<String>? ownedBatchIds,
+  List<Batch>? ownedBatchs,
   List<String>? memberClubIds,
   List<String>? favoriteBrewerIds,
   List<String>? favoriteClubIds,
   Map<String, NotificationPreference>? notificationPreferences,
   List<Prompt>? prompts,
-})  : ownedBatchIds = ownedBatchIds ?? [],
+})  : ownedBatchs = ownedBatchs ?? [],
       memberClubIds = memberClubIds ?? [],
       favoriteBrewerIds = favoriteBrewerIds ?? [],
       favoriteClubIds = favoriteClubIds ?? [],

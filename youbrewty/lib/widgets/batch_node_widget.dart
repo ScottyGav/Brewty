@@ -27,7 +27,7 @@ class BatchNodeWidget extends StatelessWidget {
               title: Text('MERGE [${me.type}] from ${me.sourceBatchIds.join(", ")}'),
               subtitle: Text(me.timestamp.toIso8601String()),
             )),
-        ...batch.parentBatchIds
+        ...batch.parentBatchs
             .where((pid) => batchMap.containsKey(pid))
             .map((pid) => Padding(
                   padding: EdgeInsets.only(left: 16),

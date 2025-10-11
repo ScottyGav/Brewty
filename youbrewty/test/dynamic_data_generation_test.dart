@@ -1,12 +1,19 @@
 import 'dart:math';
 import 'package:test/test.dart';
-import '../lib/models.dart';
+import 'package:youbrewty/models.dart';
 import 'utils/ingredient_lineage_wireframe.dart';
 
+import 'package:graphview/GraphView.dart';
 
 void main() {
+
+  final List<Strain> globalStrains = [];
+final List<StrainTransferEvent> globalStrainTransferEvents = [];
+
   group('Dynamic Data Generation and Lineage', () {
     final random = Random();
+
+
 
     String randomId(String prefix) => '$prefix${random.nextInt(10000)}';
 
@@ -68,6 +75,63 @@ void copyIngredientEvents(Batch source, Batch host) {
   host.ingredientEvents.addAll(source.ingredientEvents);
 }
 
+List<StrainTransferEvent?> findLatestStrainTransferEventForStrain(Batch batch, Strain strain, List<StrainTransferEvent?> latestStrainTransferEventForStrain) {
+  // Filter events for the given strain
+
+
+ 
+
+  final eventsForStrain = batch.strainTransferEvents.where((e) => e.strain.strainId == strain.strainId).toList();
+  if (eventsForStrain.isNotEmpty){
+
+       eventsForStrain.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      //return eventsForStrain.first;
+      latestStrainTransferEventForStrain.add(eventsForStrain.first);
+  }
+  else
+  {
+    //for all parent parentBatchs, get the last event fro this same strain
+    for(final parentBatch in batch.parentBatchs)
+    {
+        final event = findLatestStrainTransferEventForStrain(parentBatch, strain, latestStrainTransferEventForStrain);
+        latestStrainTransferEventForStrain.addAll(event);
+    }
+  }
+   return latestStrainTransferEventForStrain;
+}
+
+/// Adds each strain from [sourceBatch] as a new ingredient transfer event in [destinationBatch].
+/// For every strain in the source batch, creates a StrainTransferEvent in the destination batch.
+void addBatchAsIngredient({
+  required Batch sourceBatch,
+  required Batch destinationBatch,
+  required DateTime timestamp,
+}) {
+  for (final strain in sourceBatch.strains) {
+
+     List<StrainTransferEvent?> latestStrainTransferEventForStrain = [];
+findLatestStrainTransferEventForStrain(sourceBatch, strain, latestStrainTransferEventForStrain);
+
+print("latestStrainTransferEventForStrain.length addBatchAsIngredient: "+latestStrainTransferEventForStrain.length.toString());
+
+
+    final event = StrainTransferEvent(
+      eventId: '${destinationBatch.batchId}_${strain.strainId}_${timestamp.toIso8601String()}',
+      previousStrainTransferEvents: latestStrainTransferEventForStrain,
+      strain: strain,
+      sourceBatchId: sourceBatch.batchId,
+      destinationBatchId: destinationBatch.batchId,
+      timestamp: timestamp
+    );
+    destinationBatch.strainTransferEvents.add(event);
+
+    globalStrainTransferEvents.add(event);
+
+    strain.strainTransferEvents.add(event);
+  }
+}
+
+
 /*
 /// Generates a random list of Ingredient objects from the given [ingredients] collection.
 /// [count] specifies how many ingredients to pick.
@@ -122,8 +186,48 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
             RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: i))),
           ],
         );
-        brewer.ownedBatchIds.add(batch.batchId);
+        brewer.ownedBatchs.add(batch);
         batches.add(batch);
+
+        batch.ingredientEvents.forEach((event) {
+         if(event.ingredient.introducesStrain)
+         {
+            print("event.ingredient.introducesStrain NewBatch: ${event.ingredient.ingredientType}");
+
+            //add a new strain to the batch and global list
+            final newStrain = Strain(
+              strainId: 'S${globalStrains.length + 1}',
+              strainName: 'Strain ${globalStrains.length + 1}',
+              ingrediant: event.ingredient, //source ingrediant reference
+              initialDate: event.timestamp,
+              brewerId: brewer.brewerId,
+              description: 'A strain introduced by ${event.ingredient.ingredientType}',
+            );
+
+            List<StrainTransferEvent?> latestStrainTransferEventForStrain = [];
+            findLatestStrainTransferEventForStrain(batch, newStrain,latestStrainTransferEventForStrain);
+            print("latestStrainTransferEventForStrain.length: "+latestStrainTransferEventForStrain.length.toString());
+
+            //create a StrainTransferEvent for this new strain into the batch
+            final strainEvent = StrainTransferEvent(
+              eventId: '${batch.batchId}_${newStrain.strainId}_${event.timestamp.toIso8601String()}',
+              previousStrainTransferEvents: latestStrainTransferEventForStrain,
+              strain: newStrain,
+              sourceBatchId: '', // no source batch, it's introduced here
+              destinationBatchId: batch.batchId,
+              timestamp: event.timestamp,
+            );
+
+            batch.strainTransferEvents.add(strainEvent);
+            globalStrainTransferEvents.add(strainEvent);
+
+            batch.strains.add(newStrain);
+            globalStrains.add(newStrain); 
+
+            newStrain.strainTransferEvents.add(strainEvent);
+
+         }
+        });
       }
 
       // Random batch splits/merges (simulate merges at creation)
@@ -148,9 +252,52 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           roomHistory: [
             RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: count + i))),
           ],
-          parentBatchIds: [batches[parentA].batchId, batches[parentB].batchId],
+          parentBatchs: [batches[parentA], batches[parentB]],
         );
-        brewer.ownedBatchIds.add(mergeBatch.batchId);
+
+        mergeBatch.ingredientEvents.forEach((event) {
+         
+         if(event.ingredient.introducesStrain)
+         {
+
+            print("event.ingredient.introducesStrain mergeBatch: ${event.ingredient.ingredientType}");
+
+            //add a new strain to the batch and global list
+            final newStrain = Strain(
+              strainId: 'S${globalStrains.length + 1}',
+              strainName: 'Strain ${globalStrains.length + 1}',
+              ingrediant: event.ingredient, //source ingrediant reference
+              initialDate: event.timestamp,
+              brewerId: brewer.brewerId,
+              description: 'A strain introduced by ${event.ingredient.ingredientType}',
+            );
+
+          List<StrainTransferEvent?> latestStrainTransferEventForStrain = [];
+            findLatestStrainTransferEventForStrain(mergeBatch, newStrain,latestStrainTransferEventForStrain);
+            print("latestStrainTransferEventForStrain.length: "+latestStrainTransferEventForStrain.length.toString());
+
+            //create a StrainTransferEvent for this new strain into the batch
+            final strainEvent = StrainTransferEvent(
+              eventId: '${mergeBatch.batchId}_${newStrain.strainId}_${event.timestamp.toIso8601String()}',
+              previousStrainTransferEvents: latestStrainTransferEventForStrain,
+              strain: newStrain,
+              sourceBatchId: '', // no source batch, it's introduced here
+              destinationBatchId: mergeBatch.batchId,
+              timestamp: event.timestamp,
+            );
+            
+            mergeBatch.strainTransferEvents.add(strainEvent);
+            globalStrainTransferEvents.add(strainEvent);
+
+            mergeBatch.strains.add(newStrain);
+            globalStrains.add(newStrain); 
+
+            newStrain.strainTransferEvents.add(strainEvent);
+         }
+
+        });
+
+        brewer.ownedBatchs.add(mergeBatch);
 
         // Add merge event (type: creation)
         final mergeEvent = MergeEvent(
@@ -159,12 +306,13 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           timestamp: start.add(Duration(days: count + i, hours: random.nextInt(24))),
           type: MergeEventType.creation,
         );
+        
         mergeBatch.mergeEvents = [mergeEvent];
         allMergeEvents.add(mergeEvent);
 
         // Link children to parents
-        batches[parentA].childBatchIds.add(mergeBatchId);
-        batches[parentB].childBatchIds.add(mergeBatchId);
+        batches[parentA].childBatchs.add(mergeBatch);
+        batches[parentB].childBatchs.add(mergeBatch);
 
         batches.add(mergeBatch);
       }
@@ -186,7 +334,14 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           timestamp: start.add(Duration(days: count * 2 + i)),
         ));
 */
-        copyIngredientEvents(source, host);
+       // copyIngredientEvents(source, host);
+
+      //probably to be added to a merge event function later
+       addBatchAsIngredient(
+          sourceBatch: source,
+          destinationBatch: host,
+          timestamp: DateTime.now(),
+        );
 
         // Add merge event (type: ingredient)
         final mergeEvent = MergeEvent(
@@ -195,12 +350,13 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           timestamp: start.add(Duration(days: count * 2 + i)),
           type: MergeEventType.ingredient,
         );
+        
         host.mergeEvents = (host.mergeEvents ?? [])..add(mergeEvent);
         allMergeEvents.add(mergeEvent);
 
         // Optionally, make the host batch a child of the source batch
-        source.childBatchIds.add(host.batchId);
-        host.parentBatchIds.add(source.batchId);
+        source.childBatchs.add(host);
+        host.parentBatchs.add(source);
       }
 
       return batches;
@@ -228,7 +384,7 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
         'timestamp': e.timestamp.toIso8601String(),
       }).toList();
 
-      for (var parentId in batch.parentBatchIds) {
+      for (var parentId in batch.parentBatchs) {
         if (batchMap.containsKey(parentId)) {
           lineage.addAll(collectIngredientLineageWithBatch(batchMap[parentId]!, batchMap, visited));
         }
@@ -261,11 +417,11 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
       }
 
       // Print parents (if any)
-      for (var i = 0; i < batch.parentBatchIds.length; i++) {
-        final parentId = batch.parentBatchIds[i];
+      for (var i = 0; i < batch.parentBatchs.length; i++) {
+        final parentId = batch.parentBatchs[i];
         final parentBatch = batchMap[parentId];
         if (parentBatch != null) {
-          final isLast = i == batch.parentBatchIds.length - 1;
+          final isLast = i == batch.parentBatchs.length - 1;
           final childPrefix = prefix + (isFinal ? '   ' : '   ') + (isLast ? '   ' : '│  ');
           printIngredientLineageHierarchy(
             parentBatch,
@@ -298,7 +454,7 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
 
     // Find all terminal batches (no children)
     List<Batch> findTerminalBatches(List<Batch> batches) =>
-        batches.where((b) => b.childBatchIds.isEmpty).toList();
+        batches.where((b) => b.childBatchs.isEmpty).toList();
 
     // Filter for terminal batches with a merge in their ancestry
     bool hasMergeInAncestry(Batch batch, Map<String, Batch> batchMap, [Set<String>? visited]) {
@@ -307,7 +463,7 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
       visited.add(batch.batchId);
 
       if ((batch.mergeEvents ?? []).any((me) => me.sourceBatchIds.length > 1)) return true;
-      for (final pid in batch.parentBatchIds) {
+      for (final pid in batch.parentBatchs) {
         final parent = batchMap[pid];
         if (parent != null && hasMergeInAncestry(parent, batchMap, visited)) {
           return true;
@@ -359,5 +515,45 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
       // Simple assertion: lineage is not empty
       expect(lineage, isNotEmpty);
     });
+  });
+
+  group('StrainTransferEvent network diagram construction', () {
+    test('should generate a network graph from random StrainTransferEvents', () {
+      // Generate test data
+      
+
+      // Create a graph where nodes are StrainTransferEvents and edges are relationships (e.g., transfer between batches)
+      final Graph graph = Graph();
+      final Map<String, Node> eventNodes = {};
+
+      // 1. Create nodes for each StrainTransferEvent
+      for (var globalStrainTransferEvent in globalStrainTransferEvents) {
+        eventNodes[globalStrainTransferEvent.eventId] = Node.Id(
+          '${globalStrainTransferEvent.eventId} ',
+        );
+        graph.addNode(eventNodes[globalStrainTransferEvent.eventId]!);
+      }
+
+      // 2. Create edges between events (sourceBatchId links)
+      for (var globalStrainTransferEvent in globalStrainTransferEvents) {
+          for(final previousEvent in globalStrainTransferEvent.previousStrainTransferEvents)
+          {
+            if(previousEvent != null && eventNodes.containsKey(previousEvent.eventId))
+            {
+                graph.addEdge(eventNodes[previousEvent.eventId]!, eventNodes[globalStrainTransferEvent.eventId]!);
+            }
+          }
+      }
+
+      // 3. Assert that all nodes are present
+      expect(graph.nodeCount(), globalStrainTransferEvents.length);
+
+      // 4. Optionally, assert expected edge count, connectivity, etc.
+      // For a more advanced test, you could check for cycles, connectivity, etc.
+
+      // 5. Print graph info for debugging (optional)
+      print('Graph has ${graph.nodeCount()} nodes and ${graph.edges.length} edges.');
+    });
+
   });
 }
