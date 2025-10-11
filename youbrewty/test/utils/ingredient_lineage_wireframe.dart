@@ -54,7 +54,7 @@ void printIngredientLineageTrueHierarchy(
   for (final entry in timeline) {
     if (entry.type == _BatchEventType.ingredient) {
       final e = entry.event as IngredientEvent;
-      final batchMatch = RegExp(r'^batch:(.+)$').firstMatch(e.ingredientType);
+      final batchMatch = RegExp(r'^batch:(.+)$').firstMatch(e.ingredient.ingredientType);
       if (batchMatch != null) {
         final mergedBatchId = batchMatch.group(1)!;
         print('$prefix   └─ batch:$mergedBatchId (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
@@ -86,7 +86,7 @@ void printIngredientLineageTrueHierarchy(
           print('$prefix         (Batch $mergedBatchId missing)');
         }
       } else {
-        print('$prefix   └─ ${e.ingredientType} (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
+        print('$prefix   └─ ${e.ingredient.ingredientType} (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
       }
     }
     if (entry.type == _BatchEventType.merge) {

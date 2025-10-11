@@ -48,10 +48,50 @@ void main() {
       return roomsByBrewer;
     }
 
-    final ingredients = ['water', 'sugar', 'honey', 'ginger', 'lemon', 'yeast', 'apple juice', 'grape juice'];
-    List<IngredientEvent> randomIngredients(int count, DateTime start) {
+final List<Ingredient> ingredients = [
+  Ingredient(ingredientType: 'water', introducesStrain: false),
+  Ingredient(ingredientType: 'honey', introducesStrain: false),
+  Ingredient(ingredientType: 'apple', introducesStrain: true),
+  Ingredient(ingredientType: 'grape', introducesStrain: true),
+    
+    Ingredient(ingredientType: 'sugar', introducesStrain: false),
+    Ingredient(ingredientType: 'ginger', introducesStrain: true),
+    Ingredient(ingredientType: 'lemon', introducesStrain: true),
+    Ingredient(ingredientType: 'yeast', introducesStrain: true),
+  // Add more as needed...
+];
+
+
+/// Copies all ingredient events from [source] batch to [host] batch.
+/// This appends the events to host.ingredientEvents, preserving both sets.
+void copyIngredientEvents(Batch source, Batch host) {
+  host.ingredientEvents.addAll(source.ingredientEvents);
+}
+
+/*
+/// Generates a random list of Ingredient objects from the given [ingredients] collection.
+/// [count] specifies how many ingredients to pick.
+/// The same ingredient may be picked more than once.
+List<Ingredient> randomIngredientsList(int count, List<Ingredient> ingredients) {
+  final random = Random();
+  return List.generate(
+    count,
+    (_) => ingredients[random.nextInt(ingredients.length)],
+  );
+}
+*/
+/// Selects a single random Ingredient from the given [ingredients] list.
+Ingredient randomIngredient(List<Ingredient> ingredients) {
+  final random = Random();
+  return ingredients[random.nextInt(ingredients.length)];
+}
+
+
+    //final ingredients = ['water', 'sugar', 'honey', 'ginger', 'lemon', 'yeast', 'apple juice', 'grape juice'];
+
+    List<IngredientEvent> randomIngredientEvents(int count, DateTime start) {
       return List.generate(count, (i) => IngredientEvent(
-            ingredientType: ingredients[random.nextInt(ingredients.length)],
+            ingredient:  randomIngredient(ingredients),
             quantity: (random.nextDouble() * 500).roundToDouble(),
             action: IngredientAction.add,
             timestamp: start.add(Duration(hours: i)),
@@ -76,7 +116,7 @@ void main() {
           batchId: randomId('BA'),
           name: 'Batch ${i + 1}',
           capacity: 500 + random.nextInt(1000).toDouble(),
-          ingredientEvents: randomIngredients(1 + random.nextInt(3), start.add(Duration(days: i))),
+          ingredientEvents: randomIngredientEvents(1 + random.nextInt(3), start.add(Duration(days: i))),
           sharedWithBrewers: [brewer.brewerId],
           roomHistory: [
             RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: i))),
@@ -103,7 +143,7 @@ void main() {
           batchId: mergeBatchId,
           name: 'MergedBatch ${i + 1}',
           capacity: 500 + random.nextInt(1000).toDouble(),
-          ingredientEvents: randomIngredients(1 + random.nextInt(2), start.add(Duration(days: count + i))),
+          ingredientEvents: randomIngredientEvents(1 + random.nextInt(2), start.add(Duration(days: count + i))),
           sharedWithBrewers: [brewer.brewerId],
           roomHistory: [
             RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: count + i))),
@@ -137,13 +177,16 @@ void main() {
         var host = batches[hostIdx];
         var source = batches[sourceIdx];
 
+/*
         // Add the ingredient event representing an ingredient batch addition
         host.ingredientEvents.add(IngredientEvent(
-          ingredientType: 'batch:${source.batchId}',
+          ingredient: 'batch:${source.batchId}',
           quantity: (random.nextDouble() * 250).roundToDouble(),
           action: IngredientAction.add,
           timestamp: start.add(Duration(days: count * 2 + i)),
         ));
+*/
+        copyIngredientEvents(source, host);
 
         // Add merge event (type: ingredient)
         final mergeEvent = MergeEvent(
@@ -163,6 +206,8 @@ void main() {
       return batches;
     }
 
+
+
     // --- Lineage functions ---
 
     // Chronological, batchId-annotated lineage
@@ -177,7 +222,7 @@ void main() {
 
       List<Map<String, Object>> lineage = batch.ingredientEvents.map((e) => {
         'batchId': batch.batchId,
-        'ingredient': e.ingredientType,
+        'ingredient': e.ingredient.ingredientType,
         'quantity': e.quantity,
         'action': e.action.toString().split('.').last,
         'timestamp': e.timestamp.toIso8601String(),
@@ -205,7 +250,7 @@ void main() {
 
       print('$prefix${isFinal ? "➡️" : "└─"} Batch ${batch.batchId}');
       for (var e in batch.ingredientEvents) {
-        print('$prefix   └─ ${e.ingredientType} (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
+        print('$prefix   └─ ${e.ingredient.ingredientType} (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
       }
 
       // Print merge events

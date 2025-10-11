@@ -58,32 +58,49 @@ class Batch {
       sharedWithBrewers = sharedWithBrewers ?? [],
       reviews = reviews ?? [],
       isConsumed = isConsumed,
-      mergeEvents = mergeEvents ?? [];
-      strains = strains ?? []
-
+      mergeEvents = mergeEvents ?? [],
+      strains = strains ?? [];
 }
-/// Represents an event where an ingredient was added, removed, or otherwise acted upon in a batch.
-class IngredientEvent {
-   /// Type/name of the ingredient (e.g., "honey", "batch:BA1234").
-  final String ingredientType;
-   /// Quantity (in milliliters) of the ingredient used in this event.
-  final double quantity;
-    /// The action performed (add, remove, etc.).
-  final IngredientAction action;
-  /// Timestamp when this ingredient event occurred.
-  final DateTime timestamp;
 
-    /// Indicates if this ingredient is expected to introduce a microbial strain (e.g., yeast, bacteria).
+
+/// Represents the details of an ingredient that can be added to a batch.
+/// Contains properties such as type/name, and whether it introduces a microbial strain.
+class Ingredient {
+  /// Type/name of the ingredient (e.g., "honey", "batch:BA1234").
+  final String ingredientType;
+
+  /// Indicates if this ingredient is expected to introduce a microbial strain (e.g., yeast, bacteria).
   /// If true, the system should ensure a corresponding Strain object is added to the batch's strainHistory.
   final bool introducesStrain;
 
+  Ingredient({
+    required this.ingredientType,
+    this.introducesStrain = false,
+  });
+}
+
+
+/// Represents an event where an ingredient was added, removed, or otherwise acted upon in a batch.
+/// Represents an event where an ingredient was added, removed, or otherwise acted upon in a batch.
+class IngredientEvent {
+  /// The ingredient involved in this event.
+  final Ingredient ingredient;
+
+  /// Quantity (in milliliters) of the ingredient used in this event.
+  final double quantity;
+
+  /// The action performed (add, remove, etc.).
+  final IngredientAction action;
+
+  /// Timestamp when this ingredient event occurred.
+  final DateTime timestamp;
+
   /// Creates a new [IngredientEvent] instance.
   IngredientEvent({
-    required this.ingredientType,
+    required this.ingredient,
     required this.quantity,
     required this.action,
     required this.timestamp,
-    this.introducesStrain = false,
   });
 }
 
@@ -94,6 +111,7 @@ enum IngredientAction {
   remove, /// Ingredient was removed from the batch.
    custom, /// Ingredient was otherwise manipulated (custom).
   }
+
 
 
 class TransferEvent {
@@ -173,31 +191,31 @@ class NoteEvent {
 }
 
 class Strain{
-  final Strin ingrediant; //source ingrediant reference
-  Final DateTime initialDate;
-  final string brewerId;
-  final string description;
-  final List<StrainTransferHistory> strainTransferHistory;
+  final String ingrediant; //source ingrediant reference
+  final DateTime initialDate;
+  final String brewerId;
+  final String description;
+  final List<StrainTransferEvent> strainTransferEventHistory;
 
   Strain({
     required this.ingrediant, //source ingrediant reference
     required this.initialDate,
     required this.brewerId,
     required this.description,
-    List<StrainTransferHistory>? strainTransferHistory,
-  }) : strainTransferHistory = strainTransferHistory ?? [];
+    List<StrainTransferEvent>? strainTransferEventHistory
+  }) : strainTransferEventHistory = strainTransferEventHistory ?? [];
 }
 
-class StrainTransferHistory{
-  final String batchId;
-  final DateTime dateStart;
-  final DateTime dateEnd;
+class StrainTransferEvent{
+  final String sourceBatchId;
+  final String hostBatchId;
+  final DateTime date;
   final String transferId;
 
-  StrainTransferHistory ({
-    required this.batchId,
-    required this.dateStart,
-    required this.dateEnd,
+  StrainTransferEvent ({
+    required this.sourceBatchId,
+    required this.hostBatchId,
+    required this.date,
     required this.transferId,
   });
 
