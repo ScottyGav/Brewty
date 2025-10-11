@@ -73,12 +73,17 @@ class IngredientEvent {
   /// Timestamp when this ingredient event occurred.
   final DateTime timestamp;
 
+    /// Indicates if this ingredient is expected to introduce a microbial strain (e.g., yeast, bacteria).
+  /// If true, the system should ensure a corresponding Strain object is added to the batch's strainHistory.
+  final bool introducesStrain;
+
   /// Creates a new [IngredientEvent] instance.
   IngredientEvent({
     required this.ingredientType,
     required this.quantity,
     required this.action,
     required this.timestamp,
+    this.introducesStrain = false,
   });
 }
 
