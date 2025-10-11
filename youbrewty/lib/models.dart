@@ -27,6 +27,8 @@ class Batch {
   /// List of merge events that occurred for this batch (either at creation or during its lifecycle).
   List<MergeEvent> mergeEvents;
 
+  List<Strain> strains;
+
   /// Creates a new [Batch] instance.
   Batch({
   required this.batchId,
@@ -44,6 +46,7 @@ class Batch {
   List<String>? sharedWithBrewers,
   List<BatchReview>? reviews,
   List<MergeEvent>? mergeEvents,
+  List<Strain>? strains,
 })  : ingredientEvents = ingredientEvents ?? [],
       transferEvents = transferEvents ?? [],
       roomHistory = roomHistory ?? [],
@@ -56,6 +59,7 @@ class Batch {
       reviews = reviews ?? [],
       isConsumed = isConsumed,
       mergeEvents = mergeEvents ?? [];
+      strains = strains ?? []
 
 }
 /// Represents an event where an ingredient was added, removed, or otherwise acted upon in a batch.
@@ -161,6 +165,37 @@ class NoteEvent {
   final DateTime timestamp;
 
   NoteEvent({required this.note, required this.timestamp});
+}
+
+class Strain{
+  final Strin ingrediant; //source ingrediant reference
+  Final DateTime initialDate;
+  final string brewerId;
+  final string description;
+  final List<StrainTransferHistory> strainTransferHistory;
+
+  Strain({
+    required this.ingrediant, //source ingrediant reference
+    required this.initialDate,
+    required this.brewerId,
+    required this.description,
+    List<StrainTransferHistory>? strainTransferHistory,
+  }) : strainTransferHistory = strainTransferHistory ?? [];
+}
+
+class StrainTransferHistory{
+  final String batchId;
+  final DateTime dateStart;
+  final DateTime dateEnd;
+  final String transferId;
+
+  StrainTransferHistory ({
+    required this.batchId,
+    required this.dateStart,
+    required this.dateEnd,
+    required this.transferId,
+  });
+
 }
 
 // Brewer, Club, Notification
