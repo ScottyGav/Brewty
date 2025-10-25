@@ -11,7 +11,7 @@
 ///   visited: (optional) Set of batchIds already printed, to prevent cycles.
 ///   prefix: (optional) String for indentation (used internally).
 ///
-import 'package:youbrewty/models.dart';
+import 'package:youbrewty/models/models.dart';
 
 void printIngredientLineageTrueHierarchy(
   Batch batch,

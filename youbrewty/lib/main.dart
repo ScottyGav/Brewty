@@ -2,10 +2,38 @@ import 'package:flutter/material.dart';
 
 import 'models/user_profile.dart';
 import 'screens/settings_screen_example.dart';
+
+// Sembast factories for IO and Web
+import 'package:sembast/sembast.dart' show DatabaseFactory;
+import 'package:sembast/sembast_io.dart' show databaseFactoryIo;
+//import 'package:sembast/sembast_web.dart' show databaseFactoryWeb;
+
+import 'storage/form_store.dart';
+import 'storage/sembast_form_store.dart';
+import 'screens/home_screen.dart';
+
 import 'services/preferences_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Choose factory based on platform
+  final DatabaseFactory dbFactory = kIsWeb ? databaseFactoryWeb : databaseFactoryIo;
+
+  // Compute DB path for non-web platforms
+  String dbPath;
+  if (kIsWeb) {
+    // For web the path is a logical name (IndexedDB)
+    dbPath = 'youbrewty_web.db';
+  } else {
+    final appDocDir = await getApplicationDocumentsDirectory();
+    dbPath = p.join(appDocDir.path, 'youbrewty.db');
+  }
+
+  // Create and init the store with the chosen factory
+  final FormStore formStore = SembastFormStore(dbPath: dbPath, dbFactory: dbFactory);
+  await formStore.init();
+
   // Initialize SharedPreferences-backed preferences so feature toggles
   // and other settings are available app-wide before the UI builds.
   await PreferencesService.instance.init();
@@ -17,15 +45,15 @@ Future<void> main() async {
 ///  - "/": HomePage
 ///  - "/settings": SettingsScreenExample (demonstrates SettingsScreen usage)
 class MyApp extends StatelessWidget {
+  final FormStore formStore;
   const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'YouBrewty (Demo)',
-      theme: ThemeData(
-        primarySwatch: Colors.brown,
-      ),
+      theme: ThemeData(primarySwatch: Colors.brown,),
+      home: HomeScreen(formStore: formStore),
       // Define named routes so you can navigate by name from anywhere.
       routes: {
         '/': (context) => const HomePage(),

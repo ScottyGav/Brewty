@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import '../models.dart';
+import '../models/models.dart';
 
 // Shared random instance used by main.dart for deterministic-ish selection
 final Random random = Random();

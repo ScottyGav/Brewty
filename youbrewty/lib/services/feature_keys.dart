@@ -47,8 +47,7 @@ class FeatureKeys {
         return exportCsv;
       case FeatureFlag.apiAccess:
         return apiAccess;
-    }
-    throw ArgumentError('Unknown FeatureFlag: $flag');
+  }
   }
 
   /// Reverse-map a persisted key back to a [FeatureFlag] when possible.

@@ -31,6 +31,27 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Sembast file-backed NoSQL DB (suitable for Flutter mobile & desktop)
+  sembast: 3.8.5+1
+
+  # Path utilities for building a DB path on device
+  path_provider: ^2.0.0
+  # Small path utilities used by some helpers
+  path: ^1.8.3
+
+  # Service locator / DI
+  get_it: ^7.2.0
+
+  # Simple state-management used in some example screens
+  provider: ^6.0.5
+
+  # Optional local lightweight key-value DB (some storage adapters reference Hive)
+  hive: ^2.2.3
+
+  # Optional: for web builds, use sembast_web (stores in IndexedDB/localStorage)
+  # Uncomment if you target web and want the web adapter
+  sembast_web: ^2.4.2
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

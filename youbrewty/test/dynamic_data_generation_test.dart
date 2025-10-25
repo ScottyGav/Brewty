@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:test/test.dart';
-import 'package:youbrewty/models.dart';
+import 'package:youbrewty/models/models.dart';
 import 'utils/ingredient_lineage_wireframe.dart';
 
 import 'package:graphview/GraphView.dart';

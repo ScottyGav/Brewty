@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/models.dart';
 import '../widgets/batch_node_widget.dart';
 
 class BatchLineageScreen extends StatelessWidget {

@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import 'package:youbrewty/models.dart';
+import 'package:youbrewty/models/models.dart';
 import 'package:youbrewty/utils/serialization.dart';
 
 /// A small, deterministic static dataset and assertions so expected outcomes

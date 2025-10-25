@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models.dart';
+import '../models/models.dart';
 
 class BatchListScreen extends StatelessWidget {
   const BatchListScreen({Key? key}) : super(key: key);

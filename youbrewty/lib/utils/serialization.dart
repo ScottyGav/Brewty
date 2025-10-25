@@ -1,4 +1,4 @@
-import '../models.dart';
+import '../models/models.dart';
 
 /// Lightweight (de)serialization helpers to map object references to IDs for
 /// persistence or network transport, and to rehydrate objects into memory.

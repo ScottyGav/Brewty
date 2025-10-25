@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:youbrewty/models.dart';
+import 'package:youbrewty/models/models.dart';
 import 'package:youbrewty/utils/serialization.dart';
 import 'package:youbrewty/utils/test_data.dart';
 

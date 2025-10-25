@@ -12,7 +12,10 @@ A few resources to get you started if this is your first Flutter project:
 - CMD : C:\Dev\YouBrewty\youbrewty
 - flutter test
 - flutter run
-- 
+
+- flutter run -d windows
+- flutter run -t lib/main_with_di.dart -d windows 
+
 - GitHup -> Repo -> Scpaces, to continue AI chat
 
 
