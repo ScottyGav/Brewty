@@ -1,89 +1,126 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
-import 'screens/batch_list_screen.dart';
-import 'screens/community_screen.dart';
-import 'screens/settings_screen.dart';
 
-import 'screens/batch_lineage_screen.dart';
-import 'utils/test_data.dart';
+import 'models/user_profile.dart';
+import 'screens/settings_screen_example.dart';
+import 'services/preferences_service.dart';
 
-//void main() => runApp(const YouBrewtyApp());
-
-void main() {
-  final batches = generateBatchesForUi();
-  //final batchMap = { for (var b in batches) b.batchId : b };
-  //final rootBatch = batches.first;
-
-  final batchMap = { for (var b in batches) b.batchId : b };
-
-    // Find terminal batches with a merge in their ancestry
-    final terminalBatches = findTerminalBatches(batches);
-    final mergedTerminalBatches = terminalBatches.where((b) => hasMergeInAncestry(b, batchMap)).toList();
-
-    if (mergedTerminalBatches.isEmpty) {
-      throw Exception('No terminal batches found that are also merge nodes or have merges in their ancestry!');
-    }
-    final finalBatch = mergedTerminalBatches[random.nextInt(mergedTerminalBatches.length)];
-
-
-  runApp(MaterialApp(
-    home: BatchLineageScreen(rootBatch: finalBatch, batchMap: batchMap),
-  ));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize SharedPreferences-backed preferences so feature toggles
+  // and other settings are available app-wide before the UI builds.
+  await PreferencesService.instance.init();
+  runApp(const MyApp());
 }
 
-
-
-class YouBrewtyApp extends StatelessWidget {
-  const YouBrewtyApp({super.key});
+/// A simple app demonstrating wiring the Settings screen into navigation.
+/// Routes:
+///  - "/": HomePage
+///  - "/settings": SettingsScreenExample (demonstrates SettingsScreen usage)
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'YouBrewty',
-      theme: ThemeData(primarySwatch: Colors.brown),
-      home: const MainNavigation(),
+      title: 'YouBrewty (Demo)',
+      theme: ThemeData(
+        primarySwatch: Colors.brown,
+      ),
+      // Define named routes so you can navigate by name from anywhere.
+      routes: {
+        '/': (context) => const HomePage(),
+        '/settings': (context) => const SettingsScreenExample(),
+      },
+      initialRoute: '/',
     );
   }
 }
 
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({Key? key}) : super(key: key);
+class HomePage extends StatefulWidget {
+  const HomePage({Key? key}) : super(key: key);
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
-
-  static final List<Widget> _screens = [
-    HomeScreen(),
-    BatchListScreen(),
-    CommunityScreen(),
-    SettingsScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+class _HomePageState extends State<HomePage> {
+  // Local representation of the profile shown on the home screen.
+  // This will be updated when the Settings screen returns an updated profile.
+  UserProfile _profile = UserProfile(userId: 'local_user');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.brown[800],
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.local_drink), label: 'Batches'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Community'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+      appBar: AppBar(
+        title: const Text('YouBrewty — Home'),
+        actions: [
+          // Quick route to settings via named route
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () => _openSettings(),
+          ),
         ],
       ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Welcome back!', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text('Current profile: ${_profile.level.toString().split('.').last.capitalize()}'),
+            const SizedBox(height: 8),
+            Text('Enabled features (${_profile.enabledFeatures.length}):'),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                children: _profile.enabledFeatures.isEmpty
+                    ? [const Text('No features enabled.')]
+                    : _profile.enabledFeatures
+                        .map((f) => ListTile(title: Text(f.toString().split('.').last.capitalize())))
+                        .toList(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.settings),
+              label: const Text('Open Settings'),
+              onPressed: () => _openSettings(),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.settings_applications),
+        onPressed: () => _openSettings(),
+        tooltip: 'Open Settings',
+      ),
     );
+  }
+
+  Future<void> _openSettings() async {
+    // Use named route: the SettingsScreenExample will be created and pushed.
+    // It returns a UserProfile on save/pop; update local view if present.
+    final result = await Navigator.of(context).pushNamed('/settings');
+
+    if (result is UserProfile) {
+      setState(() {
+        _profile = result;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated')),
+      );
+    } else {
+      // If the settings screen was dismissed without saving, do nothing.
+    }
+  }
+}
+
+/// Simple helper to capitalize enum/string labels.
+extension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return this[0].toUpperCase() + substring(1);
   }
 }
