@@ -69,11 +69,7 @@ final List<Ingredient> ingredients = [
 ];
 
 
-/// Copies all ingredient events from [source] batch to [host] batch.
-/// This appends the events to host.ingredientEvents, preserving both sets.
-void copyIngredientEvents(Batch source, Batch host) {
-  host.ingredientEvents.addAll(source.ingredientEvents);
-}
+// (removed) copyIngredientEvents was unused — helper removed to clean analyzer warnings
 
 List<StrainTransferEvent?> findLatestStrainTransferEventForStrain(Batch batch, Strain strain, List<StrainTransferEvent?> latestStrainTransferEventForStrain) {
   // Filter events for the given strain
@@ -119,8 +115,8 @@ print("latestStrainTransferEventForStrain.length addBatchAsIngredient: "+latestS
       eventId: '${destinationBatch.batchId}_${strain.strainId}_${timestamp.toIso8601String()}',
       previousStrainTransferEvents: latestStrainTransferEventForStrain,
       strain: strain,
-      sourceBatchId: sourceBatch.batchId,
-      destinationBatchId: destinationBatch.batchId,
+      sourceBatch: sourceBatch,
+      destinationBatch: destinationBatch,
       timestamp: timestamp
     );
     destinationBatch.strainTransferEvents.add(event);
@@ -183,7 +179,7 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           ingredientEvents: randomIngredientEvents(1 + random.nextInt(3), start.add(Duration(days: i))),
           sharedWithBrewers: [brewer.brewerId],
           roomHistory: [
-            RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: i))),
+            RoomEvent(room: room, timestamp: start.add(Duration(days: i))),
           ],
         );
         brewer.ownedBatchs.add(batch);
@@ -213,8 +209,8 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
               eventId: '${batch.batchId}_${newStrain.strainId}_${event.timestamp.toIso8601String()}',
               previousStrainTransferEvents: latestStrainTransferEventForStrain,
               strain: newStrain,
-              sourceBatchId: '', // no source batch, it's introduced here
-              destinationBatchId: batch.batchId,
+              sourceBatch: null, // no source batch, it's introduced here
+              destinationBatch: batch,
               timestamp: event.timestamp,
             );
 
@@ -250,7 +246,7 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
           ingredientEvents: randomIngredientEvents(1 + random.nextInt(2), start.add(Duration(days: count + i))),
           sharedWithBrewers: [brewer.brewerId],
           roomHistory: [
-            RoomEvent(roomId: room.roomId, timestamp: start.add(Duration(days: count + i))),
+            RoomEvent(room: room, timestamp: start.add(Duration(days: count + i))),
           ],
           parentBatchs: [batches[parentA], batches[parentB]],
         );
@@ -281,8 +277,8 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
               eventId: '${mergeBatch.batchId}_${newStrain.strainId}_${event.timestamp.toIso8601String()}',
               previousStrainTransferEvents: latestStrainTransferEventForStrain,
               strain: newStrain,
-              sourceBatchId: '', // no source batch, it's introduced here
-              destinationBatchId: mergeBatch.batchId,
+              sourceBatch: null, // no source batch, it's introduced here
+              destinationBatch: mergeBatch,
               timestamp: event.timestamp,
             );
             
@@ -301,8 +297,8 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
 
         // Add merge event (type: creation)
         final mergeEvent = MergeEvent(
-          hostBatchId: mergeBatchId,
-          sourceBatchIds: [batches[parentA].batchId, batches[parentB].batchId],
+          hostBatch: mergeBatch,
+          sourceBatches: [batches[parentA], batches[parentB]],
           timestamp: start.add(Duration(days: count + i, hours: random.nextInt(24))),
           type: MergeEventType.creation,
         );
@@ -345,13 +341,13 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
 
         // Add merge event (type: ingredient)
         final mergeEvent = MergeEvent(
-          hostBatchId: host.batchId,
-          sourceBatchIds: [source.batchId],
+          hostBatch: host,
+          sourceBatches: [source],
           timestamp: start.add(Duration(days: count * 2 + i)),
           type: MergeEventType.ingredient,
         );
-        
-        host.mergeEvents = (host.mergeEvents ?? [])..add(mergeEvent);
+
+  host.mergeEvents.add(mergeEvent);
         allMergeEvents.add(mergeEvent);
 
         // Optionally, make the host batch a child of the source batch
@@ -384,55 +380,15 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
         'timestamp': e.timestamp.toIso8601String(),
       }).toList();
 
-      for (var parentId in batch.parentBatchs) {
-        if (batchMap.containsKey(parentId)) {
-          lineage.addAll(collectIngredientLineageWithBatch(batchMap[parentId]!, batchMap, visited));
-        }
+      for (var parent in batch.parentBatchs) {
+        // parent is a Batch object (models use object references for ancestry)
+        lineage.addAll(collectIngredientLineageWithBatch(parent, batchMap, visited));
       }
       return lineage;
     }
 
-    // Hierarchical wireframe with merge events
-    void printIngredientLineageHierarchy(
-      Batch batch,
-      Map<String, Batch> batchMap, {
-      String prefix = '',
-      Set<String>? visited,
-      bool isFinal = true,
-    }) {
-      visited ??= <String>{};
-      if (visited.contains(batch.batchId)) return;
-      visited.add(batch.batchId);
-
-      print('$prefix${isFinal ? "➡️" : "└─"} Batch ${batch.batchId}');
-      for (var e in batch.ingredientEvents) {
-        print('$prefix   └─ ${e.ingredient.ingredientType} (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
-      }
-
-      // Print merge events
-      if ((batch.mergeEvents ?? []).isNotEmpty) {
-        for (var me in batch.mergeEvents!) {
-          print('$prefix   └─ MERGE [${me.type}] (${me.timestamp.toIso8601String()}): from ${me.sourceBatchIds}');
-        }
-      }
-
-      // Print parents (if any)
-      for (var i = 0; i < batch.parentBatchs.length; i++) {
-        final parentId = batch.parentBatchs[i];
-        final parentBatch = batchMap[parentId];
-        if (parentBatch != null) {
-          final isLast = i == batch.parentBatchs.length - 1;
-          final childPrefix = prefix + (isFinal ? '   ' : '   ') + (isLast ? '   ' : '│  ');
-          printIngredientLineageHierarchy(
-            parentBatch,
-            batchMap,
-            prefix: childPrefix,
-            visited: visited,
-            isFinal: false,
-          );
-        }
-      }
-    }
+    // (removed) printIngredientLineageHierarchy helper — the project uses
+    // printIngredientLineageTrueHierarchy (in test/utils) as the canonical printer.
 
     // Chronological wireframe
     void printIngredientLineageWireframeChrono(List<Map<String, Object>> lineage, String finalBatchId) {
@@ -462,10 +418,9 @@ Ingredient randomIngredient(List<Ingredient> ingredients) {
       if (visited.contains(batch.batchId)) return false;
       visited.add(batch.batchId);
 
-      if ((batch.mergeEvents ?? []).any((me) => me.sourceBatchIds.length > 1)) return true;
-      for (final pid in batch.parentBatchs) {
-        final parent = batchMap[pid];
-        if (parent != null && hasMergeInAncestry(parent, batchMap, visited)) {
+      if (batch.mergeEvents.any((me) => me.sourceBatches.length > 1)) return true;
+      for (final parent in batch.parentBatchs) {
+        if (hasMergeInAncestry(parent, batchMap, visited)) {
           return true;
         }
       }

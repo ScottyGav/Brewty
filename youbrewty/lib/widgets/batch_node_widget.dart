@@ -20,23 +20,21 @@ class BatchNodeWidget extends StatelessWidget {
       title: Text('Batch ${batch.batchId} (${batch.name})'),
       children: [
         ...batch.ingredientEvents.map((e) => ListTile(
-              title: Text('${e.ingredientType} (${e.quantity}ml)'),
+              title: Text('${e.ingredient.ingredientType} (${e.quantity}ml)'),
               subtitle: Text(e.timestamp.toIso8601String()),
             )),
-        ...?batch.mergeEvents?.map((me) => ListTile(
-              title: Text('MERGE [${me.type}] from ${me.sourceBatchIds.join(", ")}'),
+        ...batch.mergeEvents.map((me) => ListTile(
+              title: Text('MERGE [${me.type}] from ${me.sourceBatches.map((b) => b.batchId).join(", ")}'),
               subtitle: Text(me.timestamp.toIso8601String()),
             )),
-        ...batch.parentBatchs
-            .where((pid) => batchMap.containsKey(pid))
-            .map((pid) => Padding(
-                  padding: EdgeInsets.only(left: 16),
-                  child: BatchNodeWidget(
-                    batch: batchMap[pid]!,
-                    batchMap: batchMap,
-                    visited: newVisited,
-                  ),
-                )),
+        ...batch.parentBatchs.map((parent) => Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: BatchNodeWidget(
+                batch: parent,
+                batchMap: batchMap,
+                visited: newVisited,
+              ),
+            )),
       ],
     );
   }

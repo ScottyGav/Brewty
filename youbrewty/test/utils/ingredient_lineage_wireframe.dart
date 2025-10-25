@@ -40,14 +40,12 @@ void printIngredientLineageTrueHierarchy(
     ));
     // If this is a batch ingredient (e.g. 'batch:BA5608'), we'll expand it below
   }
-  if (batch.mergeEvents != null) {
-    for (final me in batch.mergeEvents!) {
-      timeline.add(_BatchEvent(
-        type: _BatchEventType.merge,
-        event: me,
-        timestamp: me.timestamp,
-      ));
-    }
+  for (final me in batch.mergeEvents) {
+    timeline.add(_BatchEvent(
+      type: _BatchEventType.merge,
+      event: me,
+      timestamp: me.timestamp,
+    ));
   }
   timeline.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
@@ -59,19 +57,17 @@ void printIngredientLineageTrueHierarchy(
         final mergedBatchId = batchMatch.group(1)!;
         print('$prefix   └─ batch:$mergedBatchId (${e.quantity}ml) @ ${e.timestamp.toIso8601String()}');
         
-        // Find corresponding mergeEvent if exists
-        MergeEvent? mergeEv;
-        if (batch.mergeEvents != null) {
-        final matches = batch.mergeEvents!.where(
-            (me) => me.type == MergeEventType.ingredient &&
-                    me.sourceBatchIds.contains(mergedBatchId) &&
-                    me.timestamp == e.timestamp,
-        );
-        mergeEv = matches.isNotEmpty ? matches.first : null;
-        }
-        if (mergeEv != null) {
-        print('$prefix      └─ MERGE [ingredient] (${mergeEv.timestamp.toIso8601String()}): from ${mergeEv.sourceBatchIds}');
-        }
+    // Find corresponding mergeEvent if exists
+    MergeEvent? mergeEv;
+    final matches = batch.mergeEvents.where(
+    (me) => me.type == MergeEventType.ingredient &&
+        me.sourceBatches.any((b) => b.batchId == mergedBatchId) &&
+        me.timestamp == e.timestamp,
+    );
+    mergeEv = matches.isNotEmpty ? matches.first : null;
+    if (mergeEv != null) {
+      print('$prefix      └─ MERGE [ingredient] (${mergeEv.timestamp.toIso8601String()}): from ${mergeEv.sourceBatches.map((b) => b.batchId).toList()}');
+    }
 
 
         if (batchMap.containsKey(mergedBatchId)) {
@@ -92,19 +88,15 @@ void printIngredientLineageTrueHierarchy(
     if (entry.type == _BatchEventType.merge) {
       final me = entry.event as MergeEvent;
       if (me.type == MergeEventType.creation) {
-        print('$prefix   └─ MERGE [creation] (${me.timestamp.toIso8601String()}): from ${me.sourceBatchIds}');
-        for (final srcId in me.sourceBatchIds) {
-          if (batchMap.containsKey(srcId)) {
-            printIngredientLineageTrueHierarchy(
-              batchMap[srcId]!,
-              batchMap,
-              visited: seenHere,
-              prefix: '$prefix      ',
-              isFinal: false,
-            );
-          } else {
-            print('$prefix      (Batch $srcId missing)');
-          }
+        print('$prefix   └─ MERGE [creation] (${me.timestamp.toIso8601String()}): from ${me.sourceBatches.map((b) => b.batchId).toList()}');
+        for (final src in me.sourceBatches) {
+          printIngredientLineageTrueHierarchy(
+            src,
+            batchMap,
+            visited: seenHere,
+            prefix: '$prefix      ',
+            isFinal: false,
+          );
         }
       } else if (me.type == MergeEventType.ingredient) {
         // Already handled inline with ingredient event above; skip here to prevent duplicate display.

@@ -7,8 +7,8 @@ classDiagram
         String name
         double capacity
         List~IngredientEvent~ ingredientEvents
-        List~String~ parentBatchIds
-        List~String~ childBatchIds
+    List~Batch~ parentBatchs
+    List~Batch~ childBatchs
         List~MergeEvent~ mergeEvents
         List~String~ sharedWithBrewers
         List~RoomEvent~ roomHistory
@@ -22,14 +22,14 @@ classDiagram
     }
 
     class MergeEvent {
-        String hostBatchId
-        List~String~ sourceBatchIds
+        Batch hostBatch
+    List~Batch~ sourceBatches
         DateTime timestamp
         MergeEventType type
     }
 
     class RoomEvent {
-        String roomId
+        Room room
         DateTime timestamp
     }
 
@@ -37,7 +37,7 @@ classDiagram
         String brewerId
         String name
         List~String~ memberClubIds
-        List~String~ ownedBatchIds
+        List~Batch~ ownedBatchs
     }
 
     class Club {
