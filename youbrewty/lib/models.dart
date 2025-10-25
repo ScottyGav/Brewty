@@ -19,9 +19,9 @@ class Batch {
   List<ActivityEvent> activityHistory;
   List<SamplingEvent> samplingEvents;
   List<NoteEvent> noteEvents;
-    /// List of batch IDs that are direct parents of this batch (merge ancestry).
+    /// List of parent Batch objects that are direct parents of this batch (merge ancestry).
   List<Batch> parentBatchs;
-  /// List of batch IDs that are direct children of this batch (batches that inherit from this one).
+  /// List of child Batch objects that are direct children of this batch (batches that inherit from this one).
   List<Batch> childBatchs;
   bool isConsumed;
     /// List of brewer IDs with whom this batch is shared.
@@ -122,13 +122,13 @@ enum IngredientAction {
 class TransferEvent {
   final TransferDirection direction;
   final double volume;
-  final String? targetBatchId;
+  final Batch? targetBatch;
   final DateTime timestamp;
 
   TransferEvent({
     required this.direction,
     required this.volume,
-    this.targetBatchId,
+    this.targetBatch,
     required this.timestamp,
   });
 }
@@ -137,11 +137,11 @@ enum TransferDirection { TransferIn, TransferOut }
 
 /// Represents an event where a batch is moved to a different room.
 class RoomEvent {
-  final String roomId;/// The room's unique identifier.
+  final Room room;/// The room object where the batch was stored.
   final DateTime timestamp; /// The timestamp when the batch entered this room.
  
  /// Creates a new [RoomEvent] instance.
-  RoomEvent({required this.roomId, required this.timestamp});
+  RoomEvent({required this.room, required this.timestamp});
 }
 
 class Room {
@@ -225,16 +225,16 @@ class StrainTransferEvent{
   final String eventId;
   final List<StrainTransferEvent?> previousStrainTransferEvents;
   final Strain strain;
-  final String sourceBatchId;
-  final String destinationBatchId;//multiple to accomodate splits 
+  final Batch? sourceBatch;
+  final Batch destinationBatch;//multiple to accomodate splits 
   final DateTime timestamp;
 
   StrainTransferEvent ({
     required this.eventId,
     required this.previousStrainTransferEvents,
     required this.strain,
-    required this.sourceBatchId,
-    required this.destinationBatchId,
+    this.sourceBatch,
+    required this.destinationBatch,
     required this.timestamp,
   });
 
@@ -309,7 +309,7 @@ enum NotificationPreference { all, silent, none }
 
 class BatchReview {
   final String reviewId;
-  final String batchId;
+  final Batch batch;
   final String reviewerBrewerId;
   final DateTime timestamp;
   final double? overallRating; // 1–5 stars
@@ -318,7 +318,7 @@ class BatchReview {
 
   BatchReview({
     required this.reviewId,
-    required this.batchId,
+    required this.batch,
     required this.reviewerBrewerId,
     required this.timestamp,
     this.overallRating,
@@ -366,14 +366,15 @@ enum MergeEventType {
 /// Represents an event where multiple batches are merged into a host batch,
 /// either at creation or as an ingredient event during the batch's life.
 class MergeEvent {
-  final String hostBatchId;              // The batch receiving the merge
-  final List<String> sourceBatchIds;     // The batch IDs being merged in  (sources).
+  final Batch hostBatch; // The batch receiving the merge
+  /// The Batch objects being merged in (sources). These are object references, not ids.
+  final List<Batch> sourceBatches;
   final DateTime timestamp;               /// Timestamp when the merge event occurred.
   final MergeEventType type;            /// The type of merge event (creation or ingredient).
 
   MergeEvent({
-    required this.hostBatchId,
-    required this.sourceBatchIds,
+    required this.hostBatch,
+    required this.sourceBatches,
     required this.timestamp,
     required this.type,
   });
